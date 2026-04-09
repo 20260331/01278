@@ -1,0 +1,109 @@
+# ================================
+# Git 忽略文件配置
+# 健身俱乐部综合管理系统
+# ================================
+
+# -------- 环境变量文件（包含敏感信息）--------
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+
+# -------- IDE 和编辑器 --------
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+*.sublime-workspace
+*.sublime-project
+.history/
+
+# -------- 操作系统 --------
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+Desktop.ini
+ehthumbs.db
+
+# -------- Java / Maven --------
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.log
+*.tmp
+*.hprof
+hs_err_pid*
+replay_pid*
+
+# Spring Boot
+spring-boot-devtools.pid
+
+# -------- Node.js / 前端 --------
+node_modules/
+dist/
+dist-ssr/
+.npm
+*.local
+.cache/
+.parcel-cache/
+
+# Vite
+*.local
+.vite/
+
+# pnpm / yarn
+pnpm-lock.yaml
+yarn.lock
+package-lock.json
+
+# -------- 日志文件 --------
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# -------- 临时文件 --------
+tmp/
+temp/
+*.bak
+*.backup
+*.orig
+
+# -------- 构建产物 --------
+build/
+out/
+/backend/target/
+/frontend/dist/
+
+# -------- Docker --------
+docker-compose.override.yml
+*.sql.bak
+
+# -------- 测试覆盖率 --------
+coverage/
+*.lcov
+.nyc_output/
+
+# -------- 数据库备份 --------
+backups/
+*.sql.gz
+*.dump
+
+# -------- 上传文件目录 --------
+uploads/
+static/uploads/
+
+# -------- 敏感配置 --------
+secrets/

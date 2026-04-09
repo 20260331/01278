@@ -1,0 +1,1599 @@
+{
+  "info": {
+    "_postman_id": "fitness-club-api-collection",
+    "name": "健身俱乐部管理系统 API",
+    "description": "健身俱乐部管理系统所有核心接口的测试集合",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "adminToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "coachToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "memberToken",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "认证管理",
+      "item": [
+        {
+          "name": "管理员登录",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.code === 200 && jsonData.data && jsonData.data.token) {",
+                  "    pm.collectionVariables.set('adminToken', jsonData.data.token);",
+                  "    pm.test('登录成功', function () {",
+                  "        pm.expect(jsonData.code).to.eql(200);",
+                  "    });",
+                  "} else {",
+                  "    pm.test('登录失败', function () {",
+                  "        pm.expect.fail('登录失败: ' + jsonData.message);",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"admin\",\n    \"password\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "教练登录",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.code === 200 && jsonData.data && jsonData.data.token) {",
+                  "    pm.collectionVariables.set('coachToken', jsonData.data.token);",
+                  "    pm.test('登录成功', function () {",
+                  "        pm.expect(jsonData.code).to.eql(200);",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"coach1\",\n    \"password\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "会员登录",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.code === 200 && jsonData.data && jsonData.data.token) {",
+                  "    pm.collectionVariables.set('memberToken', jsonData.data.token);",
+                  "    pm.test('登录成功', function () {",
+                  "        pm.expect(jsonData.code).to.eql(200);",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"member1\",\n    \"password\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "获取当前用户信息",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('获取用户信息成功', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.code).to.eql(200);",
+                  "    pm.expect(jsonData.data).to.have.property('userId');",
+                  "    pm.expect(jsonData.data).to.have.property('username');",
+                  "    pm.expect(jsonData.data).to.have.property('role');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/info",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "info"]
+            }
+          }
+        },
+        {
+          "name": "修改密码",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('响应状态码正确', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"oldPassword\": \"123456\",\n    \"newPassword\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/password",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "password"]
+            }
+          }
+        },
+        {
+          "name": "退出登录",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "logout"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "会员管理",
+      "item": [
+        {
+          "name": "分页查询会员",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('查询成功', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.code).to.eql(200);",
+                  "    pm.expect(jsonData.data).to.have.property('records');",
+                  "    pm.expect(jsonData.data).to.have.property('total');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/member/page?current=1&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["member", "page"],
+              "query": [
+                { "key": "current", "value": "1" },
+                { "key": "size", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "按姓名查询会员",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/member/page?current=1&size=10&name=张",
+              "host": ["{{baseUrl}}"],
+              "path": ["member", "page"],
+              "query": [
+                { "key": "current", "value": "1" },
+                { "key": "size", "value": "10" },
+                { "key": "name", "value": "张" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "获取会员详情",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/member/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["member", "1"]
+            }
+          }
+        },
+        {
+          "name": "获取当前会员信息",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{memberToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/member/current",
+              "host": ["{{baseUrl}}"],
+              "path": ["member", "current"]
+            }
+          }
+        },
+        {
+          "name": "新增会员",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('新增成功或已存在', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 400, 500]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"测试会员\",\n    \"gender\": 1,\n    \"phone\": \"13800000001\",\n    \"level\": 1,\n    \"username\": \"test_member_001\",\n    \"password\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/member",
+              "host": ["{{baseUrl}}"],
+              "path": ["member"]
+            }
+          }
+        },
+        {
+          "name": "修改会员信息（管理员）",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('修改成功', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.code).to.eql(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"id\": 1,\n    \"name\": \"张三（修改）\",\n    \"gender\": 1,\n    \"phone\": \"13800138001\",\n    \"level\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/member",
+              "host": ["{{baseUrl}}"],
+              "path": ["member"]
+            }
+          }
+        },
+        {
+          "name": "会员修改个人信息",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('会员修改个人信息成功', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.code).to.eql(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{memberToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"id\": 1,\n    \"name\": \"王小明\",\n    \"gender\": 1,\n    \"phone\": \"13900139001\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/member",
+              "host": ["{{baseUrl}}"],
+              "path": ["member"]
+            },
+            "description": "会员自己修改个人信息（姓名、性别、手机号），不能修改等级"
+          }
+        },
+        {
+          "name": "修改会员状态-冻结",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/member/status/1?status=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["member", "status", "1"],
+              "query": [
+                { "key": "status", "value": "0" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "修改会员状态-激活",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/member/status/1?status=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["member", "status", "1"],
+              "query": [
+                { "key": "status", "value": "1" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "教练管理",
+      "item": [
+        {
+          "name": "分页查询教练",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('查询成功', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.code).to.eql(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/coach/page?current=1&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["coach", "page"],
+              "query": [
+                { "key": "current", "value": "1" },
+                { "key": "size", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "获取所有教练",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/coach/list",
+              "host": ["{{baseUrl}}"],
+              "path": ["coach", "list"]
+            }
+          }
+        },
+        {
+          "name": "获取教练详情",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/coach/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["coach", "1"]
+            }
+          }
+        },
+        {
+          "name": "获取当前教练信息",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coachToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/coach/current",
+              "host": ["{{baseUrl}}"],
+              "path": ["coach", "current"]
+            }
+          }
+        },
+        {
+          "name": "新增教练",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"测试教练\",\n    \"gender\": 1,\n    \"phone\": \"13900000001\",\n    \"specialty\": \"健身塑形\",\n    \"username\": \"test_coach_001\",\n    \"password\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/coach",
+              "host": ["{{baseUrl}}"],
+              "path": ["coach"]
+            }
+          }
+        },
+        {
+          "name": "获取教练排班",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/coach/schedule/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["coach", "schedule", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "课程管理",
+      "item": [
+        {
+          "name": "分页查询课程",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('查询成功', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.code).to.eql(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/course/page?current=1&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["course", "page"],
+              "query": [
+                { "key": "current", "value": "1" },
+                { "key": "size", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "获取可预约课程",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{memberToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/course/available",
+              "host": ["{{baseUrl}}"],
+              "path": ["course", "available"]
+            }
+          }
+        },
+        {
+          "name": "获取课程详情",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/course/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["course", "1"]
+            }
+          }
+        },
+        {
+          "name": "新增课程",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"测试瑜伽课\",\n    \"type\": \"团课\",\n    \"coachId\": 1,\n    \"price\": 100.00,\n    \"maxCount\": 20,\n    \"startTime\": \"2024-12-01 09:00:00\",\n    \"duration\": 60,\n    \"description\": \"测试课程\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/course",
+              "host": ["{{baseUrl}}"],
+              "path": ["course"]
+            }
+          }
+        },
+        {
+          "name": "获取请假申请列表",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/course/leave/page?current=1&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["course", "leave", "page"],
+              "query": [
+                { "key": "current", "value": "1" },
+                { "key": "size", "value": "10" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "预约管理",
+      "item": [
+        {
+          "name": "分页查询预约记录",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('查询成功', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.code).to.eql(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/reservation/page?current=1&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["reservation", "page"],
+              "query": [
+                { "key": "current", "value": "1" },
+                { "key": "size", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "获取我的预约",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{memberToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/reservation/my?current=1&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["reservation", "my"],
+              "query": [
+                { "key": "current", "value": "1" },
+                { "key": "size", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "创建预约",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{memberToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/reservation?courseId=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["reservation"],
+              "query": [
+                { "key": "courseId", "value": "1" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "取消预约",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{memberToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/reservation/cancel/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["reservation", "cancel", "1"]
+            }
+          }
+        },
+        {
+          "name": "课程签到",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coachToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/reservation/checkin/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["reservation", "checkin", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "消费记录",
+      "item": [
+        {
+          "name": "分页查询消费记录",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/consume/page?current=1&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["consume", "page"],
+              "query": [
+                { "key": "current", "value": "1" },
+                { "key": "size", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "获取我的消费记录",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{memberToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/consume/my?current=1&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["consume", "my"],
+              "query": [
+                { "key": "current", "value": "1" },
+                { "key": "size", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "会员充值",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"memberId\": 1,\n    \"amount\": 500.00,\n    \"description\": \"充值500元\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/consume/recharge",
+              "host": ["{{baseUrl}}"],
+              "path": ["consume", "recharge"]
+            }
+          }
+        },
+        {
+          "name": "收支统计",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/consume/statistics?startDate=2024-01-01&endDate=2024-12-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["consume", "statistics"],
+              "query": [
+                { "key": "startDate", "value": "2024-01-01" },
+                { "key": "endDate", "value": "2024-12-31" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "健身记录",
+      "item": [
+        {
+          "name": "获取我的健身记录",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{memberToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/fitness/my?current=1&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["fitness", "my"],
+              "query": [
+                { "key": "current", "value": "1" },
+                { "key": "size", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "录入健身数据",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{memberToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"weight\": 70.5,\n    \"height\": 175,\n    \"exerciseType\": \"跑步\",\n    \"duration\": 30,\n    \"calorie\": 300,\n    \"remark\": \"今日感觉良好\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/fitness",
+              "host": ["{{baseUrl}}"],
+              "path": ["fitness"]
+            }
+          }
+        },
+        {
+          "name": "生成健身周报",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{memberToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/fitness/report",
+              "host": ["{{baseUrl}}"],
+              "path": ["fitness", "report"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "意见反馈",
+      "item": [
+        {
+          "name": "分页查询反馈",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/feedback/page?current=1&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["feedback", "page"],
+              "query": [
+                { "key": "current", "value": "1" },
+                { "key": "size", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "获取我的反馈",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{memberToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/feedback/my?current=1&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["feedback", "my"],
+              "query": [
+                { "key": "current", "value": "1" },
+                { "key": "size", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "提交反馈",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{memberToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"title\": \"建议增加早间课程\",\n    \"content\": \"希望能在早上7点开设瑜伽课程\",\n    \"type\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/feedback",
+              "host": ["{{baseUrl}}"],
+              "path": ["feedback"]
+            }
+          }
+        },
+        {
+          "name": "回复反馈",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/feedback/reply/1?reply=感谢您的建议，我们会尽快安排",
+              "host": ["{{baseUrl}}"],
+              "path": ["feedback", "reply", "1"],
+              "query": [
+                { "key": "reply", "value": "感谢您的建议，我们会尽快安排" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "器材管理",
+      "item": [
+        {
+          "name": "分页查询器材",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/equipment/page?current=1&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["equipment", "page"],
+              "query": [
+                { "key": "current", "value": "1" },
+                { "key": "size", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "新增器材",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"测试跑步机\",\n    \"type\": \"有氧器材\",\n    \"brand\": \"舒华\",\n    \"count\": 5,\n    \"location\": \"有氧区\",\n    \"status\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/equipment",
+              "host": ["{{baseUrl}}"],
+              "path": ["equipment"]
+            }
+          }
+        },
+        {
+          "name": "记录维护",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/equipment/maintain/1?remark=定期保养",
+              "host": ["{{baseUrl}}"],
+              "path": ["equipment", "maintain", "1"],
+              "query": [
+                { "key": "remark", "value": "定期保养" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "场地管理",
+      "item": [
+        {
+          "name": "分页查询场地",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/venue/page?current=1&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["venue", "page"],
+              "query": [
+                { "key": "current", "value": "1" },
+                { "key": "size", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "新增场地",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"测试瑜伽室\",\n    \"type\": \"团操室\",\n    \"area\": 100,\n    \"capacity\": 30,\n    \"status\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/venue",
+              "host": ["{{baseUrl}}"],
+              "path": ["venue"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "用户管理",
+      "item": [
+        {
+          "name": "分页查询用户",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user/page?current=1&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "page"],
+              "query": [
+                { "key": "current", "value": "1" },
+                { "key": "size", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "获取用户详情",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "1"]
+            }
+          }
+        },
+        {
+          "name": "重置用户密码",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/user/reset-password/2?newPassword=123456",
+              "host": ["{{baseUrl}}"],
+              "path": ["user", "reset-password", "2"],
+              "query": [
+                { "key": "newPassword", "value": "123456" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "薪资结算",
+      "item": [
+        {
+          "name": "获取教练薪资列表",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/salary/list?month=2024-01",
+              "host": ["{{baseUrl}}"],
+              "path": ["salary", "list"],
+              "query": [
+                { "key": "month", "value": "2024-01" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "获取薪资汇总",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/salary/summary?month=2024-01",
+              "host": ["{{baseUrl}}"],
+              "path": ["salary", "summary"],
+              "query": [
+                { "key": "month", "value": "2024-01" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "统计查询",
+      "item": [
+        {
+          "name": "获取管理员首页统计",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/statistics/admin",
+              "host": ["{{baseUrl}}"],
+              "path": ["statistics", "admin"]
+            }
+          }
+        },
+        {
+          "name": "获取教练业绩统计",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{coachToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/statistics/coach/performance?startDate=2024-01-01&endDate=2024-12-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["statistics", "coach", "performance"],
+              "query": [
+                { "key": "startDate", "value": "2024-01-01" },
+                { "key": "endDate", "value": "2024-12-31" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "获取会员统计",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{memberToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/statistics/member",
+              "host": ["{{baseUrl}}"],
+              "path": ["statistics", "member"]
+            }
+          }
+        },
+        {
+          "name": "获取系统日志",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/statistics/logs?current=1&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["statistics", "logs"],
+              "query": [
+                { "key": "current", "value": "1" },
+                { "key": "size", "value": "10" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "数据备份",
+      "item": [
+        {
+          "name": "获取备份统计信息",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('获取统计成功', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.code).to.eql(200);",
+                  "    pm.expect(jsonData.data).to.have.property('memberCount');",
+                  "    pm.expect(jsonData.data).to.have.property('coachCount');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backup/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["backup", "stats"]
+            }
+          }
+        },
+        {
+          "name": "导出数据备份",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/backup/export",
+              "host": ["{{baseUrl}}"],
+              "path": ["backup", "export"]
+            },
+            "description": "下载系统数据备份JSON文件"
+          }
+        },
+        {
+          "name": "验证备份文件",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('验证响应状态', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "",
+                  "description": "选择备份JSON文件"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/backup/validate",
+              "host": ["{{baseUrl}}"],
+              "path": ["backup", "validate"]
+            },
+            "description": "验证备份文件格式和完整性"
+          }
+        },
+        {
+          "name": "导入数据恢复（增量模式）",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('恢复响应状态', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "",
+                  "description": "选择备份JSON文件"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/backup/import?mode=increment",
+              "host": ["{{baseUrl}}"],
+              "path": ["backup", "import"],
+              "query": [
+                { "key": "mode", "value": "increment" }
+              ]
+            },
+            "description": "增量导入：仅导入ID不存在的新记录"
+          }
+        },
+        {
+          "name": "导入数据恢复（覆盖模式）",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('恢复响应状态', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "",
+                  "description": "选择备份JSON文件"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/backup/import?mode=overwrite",
+              "host": ["{{baseUrl}}"],
+              "path": ["backup", "import"],
+              "query": [
+                { "key": "mode", "value": "overwrite" }
+              ]
+            },
+            "description": "覆盖导入：更新已存在的记录，同时导入新记录"
+          }
+        }
+      ]
+    }
+  ]
+}

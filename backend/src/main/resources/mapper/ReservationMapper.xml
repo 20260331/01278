@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.fitness.mapper.ReservationMapper">
+
+    <select id="selectPageWithDetail" resultType="com.fitness.entity.Reservation">
+        SELECT r.*, m.name as memberName, c.name as courseName, c.start_time as courseStartTime, co.name as coachName
+        FROM reservation r
+        LEFT JOIN member m ON r.member_id = m.id
+        LEFT JOIN course c ON r.course_id = c.id
+        LEFT JOIN coach co ON c.coach_id = co.id
+        <where>
+            <if test="memberId != null">
+                AND r.member_id = #{memberId}
+            </if>
+            <if test="courseId != null">
+                AND r.course_id = #{courseId}
+            </if>
+            <if test="status != null">
+                AND r.status = #{status}
+            </if>
+        </where>
+        ORDER BY r.create_time DESC
+    </select>
+
+</mapper>

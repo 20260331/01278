@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.fitness.mapper.ConsumeRecordMapper">
+
+    <select id="selectPageWithMember" resultType="com.fitness.entity.ConsumeRecord">
+        SELECT cr.*, m.name as memberName
+        FROM consume_record cr
+        LEFT JOIN member m ON cr.member_id = m.id
+        <where>
+            <if test="memberId != null">
+                AND cr.member_id = #{memberId}
+            </if>
+            <if test="type != null">
+                AND cr.type = #{type}
+            </if>
+        </where>
+        ORDER BY cr.create_time DESC
+    </select>
+
+    <select id="selectListForExport" resultType="com.fitness.entity.ConsumeRecord">
+        SELECT cr.*, m.name as memberName
+        FROM consume_record cr
+        LEFT JOIN member m ON cr.member_id = m.id
+        <where>
+            <if test="memberId != null">
+                AND cr.member_id = #{memberId}
+            </if>
+            <if test="type != null">
+                AND cr.type = #{type}
+            </if>
+            <if test="startDate != null and startDate != ''">
+                AND DATE(cr.create_time) &gt;= #{startDate}
+            </if>
+            <if test="endDate != null and endDate != ''">
+                AND DATE(cr.create_time) &lt;= #{endDate}
+            </if>
+        </where>
+        ORDER BY cr.create_time DESC
+    </select>
+
+</mapper>

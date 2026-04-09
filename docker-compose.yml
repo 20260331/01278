@@ -1,0 +1,100 @@
+# ================================
+# Docker Compose 编排文件
+# 健身俱乐部综合管理系统
+# ================================
+# 使用说明：
+# 1. 复制 .env.example 为 .env 并修改配置
+# 2. 运行 docker-compose up -d 启动服务
+
+services:
+  # -------- MySQL 数据库服务 --------
+  mysql:
+    build:
+      context: ./sql
+      dockerfile: Dockerfile
+    container_name: fitness-mysql
+    restart: unless-stopped
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: ${DB_NAME:-fitness_club}
+      TZ: ${TZ:-Asia/Shanghai}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - fitness-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-root}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # -------- 后端服务 --------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: fitness-backend
+    restart: unless-stopped
+    ports:
+      - "${SERVER_PORT:-9999}:8080"
+    environment:
+      # 数据库连接配置（覆盖 application.yml）
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${DB_NAME:-fitness_club}?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME:-root}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      # JWT 安全配置 - 生产环境必须修改！
+      JWT_SECRET: ${JWT_SECRET:-fitness-club-jwt-secret-key-2024-very-long-secret-key-for-security}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
+      # 日志配置
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      MYBATIS_LOG_IMPL: ${MYBATIS_LOG_IMPL:-org.apache.ibatis.logging.nologging.NoLoggingImpl}
+      # JVM 配置
+      JAVA_OPTS: "-Xms256m -Xmx512m -XX:+UseG1GC"
+      TZ: ${TZ:-Asia/Shanghai}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - fitness-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # -------- 前端服务 --------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: fitness-frontend
+    restart: unless-stopped
+    ports:
+      - "8081:80"
+    environment:
+      TZ: Asia/Shanghai
+    depends_on:
+      - backend
+    networks:
+      - fitness-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+# -------- 网络配置 --------
+networks:
+  fitness-network:
+    driver: bridge
+    name: fitness-network
+
+# -------- 数据卷配置 --------
+volumes:
+  mysql_data:
+    name: fitness-mysql-data
