@@ -1,7 +1,9 @@
 package com.fitness.util;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.fitness.entity.Member;
 import com.fitness.entity.SysUser;
+import com.fitness.mapper.MemberMapper;
 import com.fitness.mapper.SysUserMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
@@ -18,12 +20,17 @@ public class SecurityUtil {
 
     @Autowired
     private SysUserMapper sysUserMapper;
+
+    @Autowired
+    private MemberMapper memberMapper;
     
     private static SysUserMapper userMapper;
+    private static MemberMapper staticMemberMapper;
     
     @PostConstruct
     public void init() {
         userMapper = this.sysUserMapper;
+        staticMemberMapper = this.memberMapper;
     }
 
     /**
@@ -61,5 +68,17 @@ public class SecurityUtil {
         SysUser user = userMapper.selectOne(
                 new LambdaQueryWrapper<SysUser>().eq(SysUser::getUsername, username));
         return user != null ? user.getRole() : null;
+    }
+
+    /**
+     * 获取当前登录会员ID
+     */
+    public static Long getCurrentMemberId() {
+        Long userId = getCurrentUserId();
+        if (userId == null) {
+            return null;
+        }
+        Member member = staticMemberMapper.selectByUserId(userId);
+        return member != null ? member.getId() : null;
     }
 }

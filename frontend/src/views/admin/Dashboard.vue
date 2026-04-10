@@ -105,6 +105,86 @@
           </div>
         </div>
       </div>
+
+      <!-- 高风险课程看板 -->
+      <div class="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm hover:shadow-lg transition-all duration-300">
+        <div class="flex items-center justify-between mb-6">
+          <div class="flex items-center gap-3">
+            <h3 class="text-xl font-serif text-slate-900">未来24小时高风险课程看板</h3>
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-rose-50 text-rose-600">
+              <iconify-icon icon="lucide:alert-triangle" width="14"></iconify-icon>
+              候补 + 爽约双因子分析
+            </span>
+          </div>
+          <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">风险预警</span>
+        </div>
+        
+        <div v-if="riskLoading" class="text-center py-8">
+          <el-spinner size="large" />
+        </div>
+        
+        <div v-else-if="highRiskCourses.length === 0" class="text-center py-8">
+          <iconify-icon icon="lucide:check-circle" width="40" class="text-emerald-400 mb-3"></iconify-icon>
+          <p class="text-slate-400">未来24小时暂无可预警的高风险课程</p>
+        </div>
+        
+        <div v-else class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-slate-100">
+                <th class="text-left py-3 px-4 font-medium text-slate-600">课程名称</th>
+                <th class="text-left py-3 px-4 font-medium text-slate-600">时间</th>
+                <th class="text-left py-3 px-4 font-medium text-slate-600">地点</th>
+                <th class="text-center py-3 px-4 font-medium text-slate-600">已预约</th>
+                <th class="text-center py-3 px-4 font-medium text-slate-600">候补人数</th>
+                <th class="text-center py-3 px-4 font-medium text-slate-600">平均爽约率</th>
+                <th class="text-center py-3 px-4 font-medium text-slate-600">风险评分</th>
+                <th class="text-center py-3 px-4 font-medium text-slate-600">风险等级</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="course in highRiskCourses" :key="course.courseId" 
+                  class="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                <td class="py-3 px-4">
+                  <span class="font-medium text-slate-900">{{ course.courseName }}</span>
+                </td>
+                <td class="py-3 px-4 text-slate-600">
+                  {{ dayjs(course.startTime).format('MM-DD HH:mm') }}
+                </td>
+                <td class="py-3 px-4 text-slate-600">{{ course.location || '待定' }}</td>
+                <td class="py-3 px-4 text-center">
+                  <span class="inline-flex items-center justify-center px-2 py-1 rounded-lg bg-blue-50 text-blue-700 font-medium min-w-[40px]">
+                    {{ course.reservationCount }}
+                  </span>
+                </td>
+                <td class="py-3 px-4 text-center">
+                  <span class="inline-flex items-center justify-center px-2 py-1 rounded-lg font-medium min-w-[40px]"
+                        :class="course.waitingCount >= 3 ? 'bg-amber-50 text-amber-700' : 'bg-slate-50 text-slate-600'">
+                    {{ course.waitingCount }}
+                  </span>
+                </td>
+                <td class="py-3 px-4 text-center">
+                  <span class="font-medium" :class="parseFloat(course.averageMissRate) >= 20 ? 'text-rose-600' : 'text-slate-600'">
+                    {{ course.averageMissRate }}%
+                  </span>
+                </td>
+                <td class="py-3 px-4 text-center">
+                  <span class="font-bold text-lg" :class="getRiskScoreClass(course.riskScore)">
+                    {{ course.riskScore }}
+                  </span>
+                </td>
+                <td class="py-3 px-4 text-center">
+                  <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium"
+                        :class="getRiskLevelClass(course.riskLevel)">
+                    <iconify-icon :icon="getRiskIcon(course.riskLevel)" width="12"></iconify-icon>
+                    {{ course.riskLevel }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </template>
 
     <!-- 教练首页 -->
@@ -239,6 +319,7 @@ import { ref, onMounted } from 'vue'
 import { useUserStore } from '@/store/modules/user'
 import { getAdminStatistics, getCoachPerformance, getMemberStatistics } from '@/api/statistics'
 import StatsCard from '@/components/common/StatsCard.vue'
+import waitingQueueApi from '@/api/waitingQueue'
 import dayjs from 'dayjs'
 
 const userStore = useUserStore()
@@ -246,6 +327,8 @@ const userStore = useUserStore()
 const stats = ref({})
 const coachStats = ref({})
 const memberStats = ref({})
+const highRiskCourses = ref([])
+const riskLoading = ref(false)
 
 const getGreeting = () => {
   const hour = new Date().getHours()
@@ -282,10 +365,45 @@ const formatMoney = (value) => {
   return '¥' + (value || 0).toLocaleString()
 }
 
+const getRiskScoreClass = (riskScore) => {
+  const score = parseFloat(riskScore)
+  if (score >= 50) return 'text-rose-600'
+  if (score >= 30) return 'text-orange-600'
+  if (score >= 10) return 'text-amber-600'
+  return 'text-slate-600'
+}
+
+const getRiskLevelClass = (riskLevel) => ({
+  '极高': 'bg-rose-100 text-rose-700',
+  '高': 'bg-orange-100 text-orange-700',
+  '中': 'bg-amber-100 text-amber-700',
+  '低': 'bg-slate-100 text-slate-600'
+}[riskLevel] || 'bg-slate-100 text-slate-600')
+
+const getRiskIcon = (riskLevel) => ({
+  '极高': 'lucide:alert-octagon',
+  '高': 'lucide:alert-triangle',
+  '中': 'lucide:alert-circle',
+  '低': 'lucide:info'
+}[riskLevel] || 'lucide:info')
+
+const loadHighRiskCourses = async () => {
+  riskLoading.value = true
+  try {
+    const res = await waitingQueueApi.getHighRiskCourses()
+    highRiskCourses.value = res.data
+  } catch (error) {
+    highRiskCourses.value = []
+  } finally {
+    riskLoading.value = false
+  }
+}
+
 onMounted(async () => {
   if (userStore.role === 'ROLE_ADMIN') {
     const res = await getAdminStatistics()
     stats.value = res.data
+    loadHighRiskCourses()
   } else if (userStore.role === 'ROLE_COACH') {
     const startDate = dayjs().startOf('month').format('YYYY-MM-DD')
     const endDate = dayjs().endOf('month').format('YYYY-MM-DD')

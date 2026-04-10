@@ -70,7 +70,7 @@
             <span class="font-medium text-slate-900">¥{{ row.price }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="120" fixed="right">
+        <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
             <el-button 
               v-if="row.currentCount < row.maxCapacity"
@@ -81,7 +81,59 @@
             >
               预约
             </el-button>
-            <span v-else class="text-slate-400 text-sm">已满</span>
+            <template v-else>
+              <el-popover
+                placement="top"
+                :width="300"
+                trigger="click"
+                v-model:visible="row.showWaitingInfo"
+                @show="loadWaitingInfo(row)"
+              >
+                <template #reference>
+                  <el-button 
+                    size="small" 
+                    class="!rounded-lg !bg-amber-500 hover:!bg-amber-600"
+                  >
+                    候补
+                  </el-button>
+                </template>
+                <div class="waiting-info-popover p-2">
+                  <h5 class="font-medium text-slate-900 mb-3">「{{ row.name }}」候补队列</h5>
+                  <div v-if="row.waitingInfo">
+                    <p class="text-sm text-slate-600 mb-2">
+                      当前候补人数：<span class="font-semibold text-amber-600">{{ row.waitingInfo.waitingCount }}</span> 人
+                    </p>
+                    <p v-if="row.waitingInfo.isInQueue" class="text-sm text-emerald-600 mb-3">
+                      您的候补顺序：第 {{ row.waitingInfo.myQueueOrder }} 位
+                    </p>
+                    <p v-else class="text-sm text-slate-500 mb-3">您还未加入该课程的候补队列</p>
+                    <div class="flex justify-end gap-2 mt-3 pt-3 border-t border-slate-100">
+                      <el-button 
+                        v-if="!row.waitingInfo.isInQueue"
+                        type="primary" 
+                        size="small"
+                        class="!bg-amber-500 hover:!bg-amber-600 !rounded-lg"
+                        @click="handleJoinWaiting(row)"
+                      >
+                        加入候补
+                      </el-button>
+                      <el-button 
+                        v-else
+                        type="danger" 
+                        size="small"
+                        class="!rounded-lg"
+                        @click="handleCancelWaiting(row)"
+                      >
+                        取消候补
+                      </el-button>
+                    </div>
+                  </div>
+                  <div v-else class="text-center py-2">
+                    <el-spinner size="small" />
+                  </div>
+                </div>
+              </el-popover>
+            </template>
           </template>
         </el-table-column>
       </el-table>
@@ -100,6 +152,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getAvailableCourses } from '@/api/course'
 import { createReservation } from '@/api/reservation'
+import waitingQueueApi from '@/api/waitingQueue'
 import dayjs from 'dayjs'
 
 const loading = ref(false)
@@ -172,6 +225,40 @@ const handleReserve = async (course) => {
       return
     }
     // 业务错误已由响应拦截器处理，这里不再重复提示
+  }
+}
+
+const loadWaitingInfo = async (course) => {
+  try {
+    const res = await waitingQueueApi.getMemberInfo(course.id)
+    course.waitingInfo = res.data
+  } catch (error) {
+    course.waitingInfo = { waitingCount: 0, isInQueue: false }
+  }
+}
+
+const handleJoinWaiting = async (course) => {
+  try {
+    await waitingQueueApi.join(course.id)
+    ElMessage.success('成功加入候补队列')
+    await loadWaitingInfo(course)
+  } catch (error) {
+    // 错误已拦截处理
+  }
+}
+
+const handleCancelWaiting = async (course) => {
+  try {
+    // 先获取当前会员在该课程的候补记录ID
+    const waitingList = await waitingQueueApi.getMyWaitingQueue()
+    const myWaiting = waitingList.data?.find(w => w.courseId === course.id)
+    if (myWaiting) {
+      await waitingQueueApi.cancel(myWaiting.id)
+      ElMessage.success('已取消候补')
+      await loadWaitingInfo(course)
+    }
+  } catch (error) {
+    // 错误已拦截处理
   }
 }
 

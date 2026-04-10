@@ -10,6 +10,7 @@ import com.fitness.exception.BusinessException;
 import com.fitness.mapper.ReservationMapper;
 import com.fitness.service.CourseService;
 import com.fitness.service.ReservationService;
+import com.fitness.service.WaitingQueueService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -50,6 +51,7 @@ import java.time.LocalDateTime;
 public class ReservationServiceImpl extends ServiceImpl<ReservationMapper, Reservation> implements ReservationService {
 
     private final CourseService courseService;
+    private final WaitingQueueService waitingQueueService;
 
     @Override
     public PageResult<Reservation> pageList(Page<Reservation> page, Long memberId, Long courseId, Integer status) {
@@ -168,6 +170,9 @@ public class ReservationServiceImpl extends ServiceImpl<ReservationMapper, Reser
         // 更新课程人数，delta=-1 表示减少1人
         // 这会触发课程状态检查，如果课程之前是已满状态会自动恢复
         courseService.updateCurrentCount(reservation.getCourseId(), -1);
+
+        // 触发候补队列处理
+        waitingQueueService.processWaitingQueueOnReservationCancel(reservation.getCourseId());
         
         log.info("取消预约: id={}", id);
     }

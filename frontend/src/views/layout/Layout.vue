@@ -15,6 +15,17 @@
 
         <!-- 右侧图标区 -->
         <div class="flex items-center gap-5">
+          <!-- 候补补位通知图标（仅会员） -->
+          <div v-if="userStore.role === 'ROLE_MEMBER'" class="relative cursor-pointer" @click="checkWaitingNotifications">
+            <iconify-icon icon="lucide:bell" width="20" class="text-slate-600 hover:text-blue-500 transition-colors"></iconify-icon>
+            <div 
+              v-if="unreadNotifyCount > 0" 
+              class="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 rounded-full text-white text-xs flex items-center justify-center animate-pulse"
+            >
+              {{ unreadNotifyCount }}
+            </div>
+          </div>
+          
           <!-- 用户下拉菜单 -->
           <el-dropdown @command="handleCommand" trigger="click">
             <div class="flex items-center gap-3 cursor-pointer group">
@@ -238,17 +249,22 @@
 <script setup>
 import { ref, reactive, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElNotification } from 'element-plus'
 import { useUserStore } from '@/store/modules/user'
 import { updatePassword } from '@/api/auth'
 import { getMemberStatistics } from '@/api/statistics'
 import { getCurrentMember, updateMember } from '@/api/member'
+import waitingQueueApi from '@/api/waitingQueue'
+import { onMounted, onUnmounted } from 'vue'
 
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
 
 const sidebarOpen = ref(false)
+const unreadNotifyCount = ref(0)
+let notificationPollingTimer = null
+const notifiedIds = ref(new Set())
 
 // 个人信息弹窗
 const profileDialogVisible = ref(false)
@@ -434,14 +450,109 @@ const menuItems = [
   { path: '/consume-record', name: '消费记录', icon: 'lucide:wallet', roles: ['ROLE_MEMBER'] },
   { path: '/fitness-record', name: '健身记录', icon: 'lucide:activity', roles: ['ROLE_MEMBER'] },
   { path: '/feedback', name: '意见反馈', icon: 'lucide:message-square', roles: ['ROLE_MEMBER'] },
+  { path: '/my-waiting', name: '我的候补', icon: 'lucide:list-orders', roles: ['ROLE_MEMBER'] },
 ]
+
+const fetchUnreadNotifications = async () => {
+  if (userStore.role !== 'ROLE_MEMBER') return
+  
+  try {
+    const res = await waitingQueueApi.getUnreadNotified()
+    const notifications = res.data || []
+    
+    unreadNotifyCount.value = notifications.length
+    
+    for (const notify of notifications) {
+      if (!notifiedIds.value.has(notify.id)) {
+        notifiedIds.value.add(notify.id)
+        showWaitingNotification(notify)
+      }
+    }
+  } catch (error) {
+    console.error('获取候补通知失败:', error)
+  }
+}
+
+const showWaitingNotification = (notify) => {
+  ElNotification({
+    title: '🎉 候补补位成功！',
+    dangerouslyUseHTMLString: true,
+    message: `
+      <div class="py-2">
+        <p class="text-slate-600 mb-2">恭喜您，课程 <strong class="text-blue-600">${notify.courseName || '未知课程'}</strong> 已候补成功！</p>
+        <div class="flex gap-3 mt-3">
+          <button 
+            onclick="window.router.push('/my-reservation')" 
+            class="px-3 py-1.5 bg-blue-500 text-white rounded-lg text-xs hover:bg-blue-600 transition-colors"
+          >查看预约</button>
+          <button 
+            id="mark-read-${notify.id}"
+            class="px-3 py-1.5 bg-slate-100 text-slate-600 rounded-lg text-xs hover:bg-slate-200 transition-colors"
+          >我知道了</button>
+        </div>
+      </div>
+    `,
+    type: 'success',
+    duration: 0,
+    position: 'top-right',
+    onClose: async () => {
+      await waitingQueueApi.markAsRead(notify.id)
+      unreadNotifyCount.value = Math.max(0, unreadNotifyCount.value - 1)
+      notifiedIds.value.delete(notify.id)
+    }
+  })
+  
+  setTimeout(() => {
+    const btn = document.getElementById(`mark-read-${notify.id}`)
+    if (btn) {
+      btn.onclick = async () => {
+        await waitingQueueApi.markAsRead(notify.id)
+        unreadNotifyCount.value = Math.max(0, unreadNotifyCount.value - 1)
+        notifiedIds.value.delete(notify.id)
+        document.querySelector('.el-notification').__vue__.close()
+      }
+    }
+  }, 100)
+}
+
+const checkWaitingNotifications = async () => {
+  if (unreadNotifyCount.value === 0) {
+    ElMessage.info('暂无新的补位通知')
+  }
+}
+
+const startNotificationPolling = () => {
+  if (userStore.role !== 'ROLE_MEMBER') return
+  
+  fetchUnreadNotifications()
+  notificationPollingTimer = setInterval(fetchUnreadNotifications, 10000)
+}
+
+const stopNotificationPolling = () => {
+  if (notificationPollingTimer) {
+    clearInterval(notificationPollingTimer)
+    notificationPollingTimer = null
+  }
+}
 
 const handleCommand = (command) => {
   if (command === 'logout') {
+    stopNotificationPolling()
     userStore.logout()
   } else if (command === 'profile') {
     resetPasswordForm()
     profileDialogVisible.value = true
   }
 }
+
+onMounted(() => {
+  window.router = router
+  if (userStore.role === 'ROLE_MEMBER') {
+    startNotificationPolling()
+  }
+})
+
+onUnmounted(() => {
+  stopNotificationPolling()
+})
 </script>
