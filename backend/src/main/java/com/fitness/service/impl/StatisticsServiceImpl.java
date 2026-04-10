@@ -3,7 +3,10 @@ package com.fitness.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fitness.entity.*;
 import com.fitness.mapper.*;
+import com.fitness.service.CourseWaitlistService;
+import com.fitness.service.MemberNoShowStatsService;
 import com.fitness.service.StatisticsService;
+import com.fitness.vo.HighRiskCourseVO;
 import com.fitness.vo.StatisticsVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -12,6 +15,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,6 +57,8 @@ public class StatisticsServiceImpl implements StatisticsService {
     private final CoachLeaveMapper coachLeaveMapper;
     private final ConsumeRecordMapper consumeRecordMapper;
     private final ReservationMapper reservationMapper;
+    private final CourseWaitlistService courseWaitlistService;
+    private final MemberNoShowStatsService memberNoShowStatsService;
 
     @Override
     public StatisticsVO getAdminStatistics() {
@@ -247,7 +253,84 @@ public class StatisticsServiceImpl implements StatisticsService {
             result.put("balance", member.getBalance());
             result.put("level", member.getLevel());  // 1-普通 2-银卡 3-金卡 4-钻石
         }
-        
+
+        return result;
+    }
+
+    /**
+     * 获取未来24小时高风险课程
+     * <p>
+     * 风险评估维度：
+     * 1. 候补人数：候补人数越多，说明课程热门但容量不足，风险越高
+     * 2. 历史爽约率：历史爽约率越高，实际到场人数可能远低于预约人数
+     * </p>
+     *
+     * <h4>风险等级计算：</h4>
+     * <pre>
+     * 风险分 = 候补人数 × 2 + 历史爽约率 × 0.5
+     *
+     * 风险等级：
+     * - 0分：无风险（绿色）
+     * - 1-5分：低风险（黄色）
+     * - 6-10分：中风险（橙色）
+     * - 10分以上：高风险（红色）
+     * </pre>
+     *
+     * @return 高风险课程列表，按风险等级降序排列
+     */
+    @Override
+    public List<HighRiskCourseVO> getHighRiskCourses() {
+        List<HighRiskCourseVO> result = new ArrayList<>();
+
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime tomorrow = now.plusHours(24);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+        List<Course> courses = courseMapper.selectFutureCourses(
+                now.format(formatter), tomorrow.format(formatter));
+
+        for (Course course : courses) {
+            Integer waitlistCount = courseWaitlistService.getWaitlistCount(course.getId());
+            BigDecimal noShowRate = memberNoShowStatsService.getCourseNoShowRate(course.getId());
+
+            if (waitlistCount == 0 && noShowRate.compareTo(new BigDecimal("20")) < 0) {
+                continue;
+            }
+
+            HighRiskCourseVO vo = new HighRiskCourseVO();
+            vo.setCourseId(course.getId());
+            vo.setCourseName(course.getName());
+            vo.setCourseType(course.getType());
+            vo.setCoachName(course.getCoachName());
+            vo.setLocation(course.getLocation());
+            vo.setStartTime(course.getStartTime());
+            vo.setMaxCapacity(course.getMaxCapacity());
+            vo.setCurrentCount(course.getCurrentCount());
+            vo.setWaitlistCount(waitlistCount);
+            vo.setAvailableSeats(course.getMaxCapacity() - course.getCurrentCount());
+            vo.setNoShowRate(noShowRate);
+
+            int riskScore = waitlistCount * 2 + noShowRate.intValue() / 2;
+
+            if (riskScore == 0) {
+                vo.setRiskLevel(0);
+                vo.setRiskReason("无风险");
+            } else if (riskScore <= 5) {
+                vo.setRiskLevel(1);
+                vo.setRiskReason(waitlistCount > 0 ? "候补人数较多" : "历史爽约率偏高");
+            } else if (riskScore <= 10) {
+                vo.setRiskLevel(2);
+                vo.setRiskReason("候补人数多且爽约率偏高");
+            } else {
+                vo.setRiskLevel(3);
+                vo.setRiskReason("高风险：候补积压严重或爽约率过高");
+            }
+
+            result.add(vo);
+        }
+
+        result.sort((a, b) -> b.getRiskLevel() - a.getRiskLevel());
+
         return result;
     }
 }

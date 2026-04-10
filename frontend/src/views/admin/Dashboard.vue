@@ -67,6 +67,44 @@
           </div>
         </div>
 
+        <!-- 高风险课程预警 -->
+        <div class="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm hover:shadow-lg transition-all duration-300">
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="text-xl font-serif text-slate-900">高风险课程预警</h3>
+            <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">24小时内</span>
+          </div>
+          <div v-if="highRiskCourses.length > 0" class="space-y-3">
+            <div v-for="course in highRiskCourses.slice(0, 4)" :key="course.courseId"
+                 class="flex items-center justify-between p-4 rounded-xl"
+                 :class="getRiskBgClass(course.riskLevel)">
+              <div class="flex items-center gap-4">
+                <div class="w-10 h-10 rounded-lg flex items-center justify-center" :class="getRiskIconBgClass(course.riskLevel)">
+                  <iconify-icon icon="lucide:alert-triangle" width="20" :class="getRiskIconClass(course.riskLevel)"></iconify-icon>
+                </div>
+                <div>
+                  <p class="text-sm font-medium text-slate-700">{{ course.courseName }}</p>
+                  <p class="text-xs text-slate-500">{{ course.startTime }} | {{ course.coachName }}</p>
+                </div>
+              </div>
+              <div class="text-right">
+                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium" :class="getRiskBadgeClass(course.riskLevel)">
+                  {{ getRiskLevelText(course.riskLevel) }}
+                </span>
+                <p class="text-xs text-slate-500 mt-1">
+                  候补{{ course.waitlistCount }}人 | 爽约率{{ course.noShowRate }}%
+                </p>
+              </div>
+            </div>
+          </div>
+          <div v-else class="text-center py-8">
+            <iconify-icon icon="lucide:shield-check" width="40" class="text-emerald-400 mb-3"></iconify-icon>
+            <p class="text-slate-400 text-sm">暂无高风险课程</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 第二行 -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
         <!-- 快捷入口 -->
         <div class="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm hover:shadow-lg transition-all duration-300">
           <div class="flex items-center justify-between mb-6">
@@ -237,7 +275,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useUserStore } from '@/store/modules/user'
-import { getAdminStatistics, getCoachPerformance, getMemberStatistics } from '@/api/statistics'
+import { getAdminStatistics, getCoachPerformance, getMemberStatistics, getHighRiskCourses } from '@/api/statistics'
 import StatsCard from '@/components/common/StatsCard.vue'
 import dayjs from 'dayjs'
 
@@ -246,6 +284,7 @@ const userStore = useUserStore()
 const stats = ref({})
 const coachStats = ref({})
 const memberStats = ref({})
+const highRiskCourses = ref([])
 
 const getGreeting = () => {
   const hour = new Date().getHours()
@@ -282,10 +321,57 @@ const formatMoney = (value) => {
   return '¥' + (value || 0).toLocaleString()
 }
 
+const getRiskLevelText = (level) => {
+  const texts = { 0: '无风险', 1: '低风险', 2: '中风险', 3: '高风险' }
+  return texts[level] || '未知'
+}
+
+const getRiskBgClass = (level) => {
+  const classes = {
+    0: 'bg-emerald-50',
+    1: 'bg-amber-50',
+    2: 'bg-orange-50',
+    3: 'bg-rose-50'
+  }
+  return classes[level] || 'bg-slate-50'
+}
+
+const getRiskIconBgClass = (level) => {
+  const classes = {
+    0: 'bg-emerald-100',
+    1: 'bg-amber-100',
+    2: 'bg-orange-100',
+    3: 'bg-rose-100'
+  }
+  return classes[level] || 'bg-slate-100'
+}
+
+const getRiskIconClass = (level) => {
+  const classes = {
+    0: 'text-emerald-500',
+    1: 'text-amber-500',
+    2: 'text-orange-500',
+    3: 'text-rose-500'
+  }
+  return classes[level] || 'text-slate-500'
+}
+
+const getRiskBadgeClass = (level) => {
+  const classes = {
+    0: 'bg-emerald-100 text-emerald-700',
+    1: 'bg-amber-100 text-amber-700',
+    2: 'bg-orange-100 text-orange-700',
+    3: 'bg-rose-100 text-rose-700'
+  }
+  return classes[level] || 'bg-slate-100 text-slate-700'
+}
+
 onMounted(async () => {
   if (userStore.role === 'ROLE_ADMIN') {
     const res = await getAdminStatistics()
     stats.value = res.data
+    const riskRes = await getHighRiskCourses()
+    highRiskCourses.value = riskRes.data
   } else if (userStore.role === 'ROLE_COACH') {
     const startDate = dayjs().startOf('month').format('YYYY-MM-DD')
     const endDate = dayjs().endOf('month').format('YYYY-MM-DD')

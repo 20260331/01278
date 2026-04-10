@@ -70,18 +70,30 @@
             <span class="font-medium text-slate-900">¥{{ row.price }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="120" fixed="right">
+        <el-table-column label="操作" width="140" fixed="right">
           <template #default="{ row }">
-            <el-button 
+            <el-button
               v-if="row.currentCount < row.maxCapacity"
-              type="primary" 
-              size="small" 
+              type="primary"
+              size="small"
               @click="handleReserve(row)"
               class="!rounded-lg"
             >
               预约
             </el-button>
-            <span v-else class="text-slate-400 text-sm">已满</span>
+            <div v-else class="flex items-center gap-2">
+              <el-button
+                type="warning"
+                size="small"
+                @click="handleJoinWaitlist(row)"
+                class="!rounded-lg"
+              >
+                候补
+              </el-button>
+              <span v-if="waitlistCounts[row.id]" class="text-xs text-amber-600">
+                {{ waitlistCounts[row.id] }}人排队
+              </span>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -100,10 +112,12 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getAvailableCourses } from '@/api/course'
 import { createReservation } from '@/api/reservation'
+import { joinWaitlist, getWaitlistCount } from '@/api/waitlist'
 import dayjs from 'dayjs'
 
 const loading = ref(false)
 const courseList = ref([])
+const waitlistCounts = ref({})
 const searchForm = reactive({
   name: '',
   type: ''
@@ -138,8 +152,21 @@ const fetchData = async () => {
   try {
     const res = await getAvailableCourses()
     courseList.value = res.data
-  } finally { 
-    loading.value = false 
+    await fetchWaitlistCounts()
+  } finally {
+    loading.value = false
+  }
+}
+
+const fetchWaitlistCounts = async () => {
+  const fullCourses = courseList.value.filter(c => c.currentCount >= c.maxCapacity)
+  for (const course of fullCourses) {
+    try {
+      const res = await getWaitlistCount(course.id)
+      waitlistCounts.value[course.id] = res.data
+    } catch (e) {
+      waitlistCounts.value[course.id] = 0
+    }
   }
 }
 
@@ -155,11 +182,11 @@ const resetSearch = () => {
 const handleReserve = async (course) => {
   try {
     await ElMessageBox.confirm(
-      `确定预约「${course.name}」课程吗？`, 
-      '确认预约', 
-      { 
-        type: 'info', 
-        confirmButtonText: '确认预约', 
+      `确定预约「${course.name}」课程吗？`,
+      '确认预约',
+      {
+        type: 'info',
+        confirmButtonText: '确认预约',
         cancelButtonText: '取消'
       }
     )
@@ -167,11 +194,30 @@ const handleReserve = async (course) => {
     ElMessage.success('预约成功')
     fetchData()
   } catch (error) {
-    // 用户取消确认框时不显示错误
     if (error === 'cancel' || error?.toString?.().includes('cancel')) {
       return
     }
-    // 业务错误已由响应拦截器处理，这里不再重复提示
+  }
+}
+
+const handleJoinWaitlist = async (course) => {
+  try {
+    await ElMessageBox.confirm(
+      `课程「${course.name}」已满，是否加入候补队列？\n候补成功后，当有名额释放时将自动为您补位。`,
+      '加入候补',
+      {
+        type: 'warning',
+        confirmButtonText: '确认候补',
+        cancelButtonText: '取消'
+      }
+    )
+    await joinWaitlist(course.id)
+    ElMessage.success('候补成功，您将在有名额时收到通知')
+    fetchData()
+  } catch (error) {
+    if (error === 'cancel' || error?.toString?.().includes('cancel')) {
+      return
+    }
   }
 }
 

@@ -11,6 +11,7 @@ import com.fitness.service.CoachService;
 import com.fitness.service.MemberService;
 import com.fitness.service.StatisticsService;
 import com.fitness.util.SecurityUtil;
+import com.fitness.vo.HighRiskCourseVO;
 import com.fitness.vo.StatisticsVO;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.swagger.v3.oas.annotations.Operation;
@@ -20,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -105,5 +107,15 @@ public class StatisticsController {
         }
         wrapper.orderByDesc(SysLog::getCreateTime);
         return Result.success(PageResult.of(sysLogMapper.selectPage(page, wrapper)));
+    }
+
+    /**
+     * 获取未来24小时高风险课程
+     */
+    @Operation(summary = "获取高风险课程", description = "获取未来24小时内的高风险课程列表（结合候补人数与历史爽约率）")
+    @GetMapping("/high-risk-courses")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Result<List<HighRiskCourseVO>> getHighRiskCourses() {
+        return Result.success(statisticsService.getHighRiskCourses());
     }
 }

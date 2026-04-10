@@ -23,4 +23,14 @@
         ORDER BY c.start_time DESC
     </select>
 
+    <select id="selectFutureCourses" resultType="com.fitness.entity.Course">
+        SELECT c.*, co.name as coachName
+        FROM course c
+        LEFT JOIN coach co ON c.coach_id = co.id
+        WHERE c.start_time &gt;= #{startTime}
+        AND c.start_time &lt;= #{endTime}
+        AND c.status IN (1, 2)
+        ORDER BY c.start_time ASC
+    </select>
+
 </mapper>

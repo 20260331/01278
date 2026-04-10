@@ -2,7 +2,7 @@ import request from './request'
 
 /**
  * 统计分析API
- * 
+ *
  * 提供系统各类统计数据
  */
 
@@ -24,4 +24,9 @@ export function getMemberStatistics() {
 // 获取系统日志
 export function getSystemLogs(params) {
   return request.get('/statistics/logs', { params })
+}
+
+// 获取高风险课程
+export function getHighRiskCourses() {
+  return request.get('/statistics/high-risk-courses')
 }
