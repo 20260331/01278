@@ -9,9 +9,12 @@ import com.fitness.entity.Reservation;
 import com.fitness.exception.BusinessException;
 import com.fitness.mapper.ReservationMapper;
 import com.fitness.service.CourseService;
+import com.fitness.service.CourseWaitlistService;
+import com.fitness.service.MemberNoShowStatsService;
 import com.fitness.service.ReservationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,6 +53,9 @@ import java.time.LocalDateTime;
 public class ReservationServiceImpl extends ServiceImpl<ReservationMapper, Reservation> implements ReservationService {
 
     private final CourseService courseService;
+    @Lazy
+    private final CourseWaitlistService courseWaitlistService;
+    private final MemberNoShowStatsService memberNoShowStatsService;
 
     @Override
     public PageResult<Reservation> pageList(Page<Reservation> page, Long memberId, Long courseId, Integer status) {
@@ -114,7 +120,10 @@ public class ReservationServiceImpl extends ServiceImpl<ReservationMapper, Reser
         // ========== 4. 更新课程人数 ==========
         // delta=1 表示增加1人，课程人数满后会自动更新课程状态为2（已满）
         courseService.updateCurrentCount(courseId, 1);
-        
+
+        // ========== 5. 记录预约统计 ==========
+        memberNoShowStatsService.recordReservation(memberId);
+
         log.info("创建预约: memberId={}, courseId={}", memberId, courseId);
     }
 
@@ -168,7 +177,10 @@ public class ReservationServiceImpl extends ServiceImpl<ReservationMapper, Reser
         // 更新课程人数，delta=-1 表示减少1人
         // 这会触发课程状态检查，如果课程之前是已满状态会自动恢复
         courseService.updateCurrentCount(reservation.getCourseId(), -1);
-        
+
+        // 触发候补补位流程
+        courseWaitlistService.processWaitlistAfterCancel(reservation.getCourseId());
+
         log.info("取消预约: id={}", id);
     }
 

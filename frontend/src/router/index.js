@@ -124,6 +124,12 @@ const routes = [
         meta: { title: '我的预约', roles: ['ROLE_MEMBER'] }
       },
       {
+        path: 'my-waitlist',
+        name: 'MyWaitlist',
+        component: () => import('@/views/member/MyWaitlist.vue'),
+        meta: { title: '我的候补', roles: ['ROLE_MEMBER'] }
+      },
+      {
         path: 'consume-record',
         name: 'ConsumeRecord',
         component: () => import('@/views/member/ConsumeRecord.vue'),

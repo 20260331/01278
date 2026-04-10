@@ -252,7 +252,43 @@ CREATE TABLE coach_leave (
     INDEX idx_start_time (start_time)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='教练请假调课申请表';
 
--- 12. 操作日志表（依赖 sys_user，但使用软关联）
+-- 12. 课程候补表（依赖 member, course）
+CREATE TABLE course_waitlist (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
+    member_id BIGINT NOT NULL COMMENT '会员ID',
+    course_id BIGINT NOT NULL COMMENT '课程ID',
+    status TINYINT DEFAULT 0 COMMENT '状态: 0-排队中 1-已补位 2-已取消 3-已过期',
+    queue_no INT NOT NULL COMMENT '排队序号',
+    notify_time DATETIME COMMENT '通知时间（补位成功时）',
+    notify_status TINYINT DEFAULT 0 COMMENT '通知状态: 0-未通知 1-已通知 2-通知失败',
+    expire_time DATETIME COMMENT '候补过期时间',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    CONSTRAINT fk_waitlist_member FOREIGN KEY (member_id) REFERENCES member(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_waitlist_course FOREIGN KEY (course_id) REFERENCES course(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    UNIQUE KEY uk_member_course (member_id, course_id, status),
+    INDEX idx_member_id (member_id),
+    INDEX idx_course_id (course_id),
+    INDEX idx_status (status),
+    INDEX idx_queue_no (course_id, queue_no),
+    INDEX idx_create_time (create_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='课程候补表';
+
+-- 13. 会员爽约统计表（依赖 member）
+CREATE TABLE member_no_show_stats (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
+    member_id BIGINT NOT NULL COMMENT '会员ID',
+    total_reservations INT DEFAULT 0 COMMENT '总预约次数',
+    no_show_count INT DEFAULT 0 COMMENT '爽约次数',
+    no_show_rate DECIMAL(5,2) DEFAULT 0.00 COMMENT '爽约率(%)',
+    last_no_show_time DATETIME COMMENT '上次爽约时间',
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    CONSTRAINT fk_noshow_member FOREIGN KEY (member_id) REFERENCES member(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    UNIQUE KEY uk_member_id (member_id),
+    INDEX idx_no_show_rate (no_show_rate)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='会员爽约统计表';
+
+-- 14. 操作日志表（依赖 sys_user，但使用软关联）
 CREATE TABLE sys_log (
     id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
     user_id BIGINT COMMENT '操作用户ID',

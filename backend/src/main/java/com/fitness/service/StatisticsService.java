@@ -1,7 +1,9 @@
 package com.fitness.service;
 
+import com.fitness.vo.HighRiskCourseVO;
 import com.fitness.vo.StatisticsVO;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -23,4 +25,9 @@ public interface StatisticsService {
      * 获取会员统计
      */
     Map<String, Object> getMemberStatistics(Long memberId);
+
+    /**
+     * 获取未来24小时高风险课程
+     */
+    List<HighRiskCourseVO> getHighRiskCourses();
 }
