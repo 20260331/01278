@@ -20,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -55,6 +56,16 @@ public class StatisticsController {
     @PreAuthorize("hasRole('ADMIN')")
     public Result<StatisticsVO> getAdminStatistics() {
         return Result.success(statisticsService.getAdminStatistics());
+    }
+
+    /**
+     * 获取未来24小时高风险课程
+     */
+    @Operation(summary = "获取高风险课程", description = "获取未来24小时高风险课程列表（结合候补人数与历史爽约率）")
+    @GetMapping("/admin/high-risk-courses")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Result<List<com.fitness.vo.HighRiskCourseVO>> getHighRiskCourses() {
+        return Result.success(statisticsService.getHighRiskCourses());
     }
 
     /**

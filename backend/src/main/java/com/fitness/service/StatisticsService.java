@@ -23,4 +23,9 @@ public interface StatisticsService {
      * 获取会员统计
      */
     Map<String, Object> getMemberStatistics(Long memberId);
+
+    /**
+     * 获取未来24小时高风险课程
+     */
+    java.util.List<com.fitness.vo.HighRiskCourseVO> getHighRiskCourses();
 }

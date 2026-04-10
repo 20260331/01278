@@ -81,7 +81,15 @@
             >
               预约
             </el-button>
-            <span v-else class="text-slate-400 text-sm">已满</span>
+            <el-button 
+              v-else
+              type="warning" 
+              size="small" 
+              @click="handleJoinWaiting(row)"
+              class="!rounded-lg"
+            >
+              候补
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -100,6 +108,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getAvailableCourses } from '@/api/course'
 import { createReservation } from '@/api/reservation'
+import { joinWaitingList } from '@/api/waitingList'
 import dayjs from 'dayjs'
 
 const loading = ref(false)
@@ -172,6 +181,27 @@ const handleReserve = async (course) => {
       return
     }
     // 业务错误已由响应拦截器处理，这里不再重复提示
+  }
+}
+
+const handleJoinWaiting = async (course) => {
+  try {
+    await ElMessageBox.confirm(
+      `课程「${course.name}」已满，确定加入候补队列吗？\n有人取消预约时将按顺序自动补位。`, 
+      '确认候补', 
+      { 
+        type: 'info', 
+        confirmButtonText: '确认加入', 
+        cancelButtonText: '取消'
+      }
+    )
+    await joinWaitingList(course.id)
+    ElMessage.success('成功加入候补队列')
+    fetchData()
+  } catch (error) {
+    if (error === 'cancel' || error?.toString?.().includes('cancel')) {
+      return
+    }
   }
 }
 

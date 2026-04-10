@@ -13,6 +13,8 @@ DROP TABLE IF EXISTS coach_leave;
 DROP TABLE IF EXISTS feedback;
 DROP TABLE IF EXISTS fitness_record;
 DROP TABLE IF EXISTS consume_record;
+DROP TABLE IF EXISTS notification;
+DROP TABLE IF EXISTS waiting_list;
 DROP TABLE IF EXISTS reservation;
 DROP TABLE IF EXISTS course;
 DROP TABLE IF EXISTS equipment;
@@ -269,6 +271,40 @@ CREATE TABLE sys_log (
     INDEX idx_create_time (create_time),
     INDEX idx_ip (ip)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='操作日志表';
+
+-- 13. 候补队列表
+CREATE TABLE waiting_list (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
+    member_id BIGINT NOT NULL COMMENT '会员ID',
+    course_id BIGINT NOT NULL COMMENT '课程ID',
+    queue_order INT NOT NULL COMMENT '排队顺序',
+    status TINYINT DEFAULT 0 COMMENT '状态: 0-排队中 1-已成功 2-已取消 3-已过期',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    CONSTRAINT fk_waiting_member FOREIGN KEY (member_id) REFERENCES member(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_waiting_course FOREIGN KEY (course_id) REFERENCES course(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    INDEX idx_member_id (member_id),
+    INDEX idx_course_id (course_id),
+    INDEX idx_status (status),
+    INDEX idx_queue_order (queue_order),
+    INDEX idx_create_time (create_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='候补队列表';
+
+-- 14. 通知表
+CREATE TABLE notification (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
+    member_id BIGINT NOT NULL COMMENT '会员ID',
+    title VARCHAR(100) NOT NULL COMMENT '标题',
+    content TEXT NOT NULL COMMENT '内容',
+    type TINYINT DEFAULT 0 COMMENT '类型: 0-系统通知 1-候补成功 2-课程变动 3-其他通知',
+    status TINYINT DEFAULT 0 COMMENT '状态: 0-未读 1-已读',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    CONSTRAINT fk_notification_member FOREIGN KEY (member_id) REFERENCES member(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    INDEX idx_member_id (member_id),
+    INDEX idx_type (type),
+    INDEX idx_status (status),
+    INDEX idx_create_time (create_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='通知表';
 
 
 -- ================================

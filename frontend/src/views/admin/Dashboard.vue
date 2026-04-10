@@ -105,9 +105,70 @@
           </div>
         </div>
       </div>
-    </template>
 
-    <!-- 教练首页 -->
+      <!-- 高风险课程看板 -->
+      <div class="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm hover:shadow-lg transition-all duration-300">
+        <div class="flex items-center justify-between mb-6">
+          <div class="flex items-center gap-3">
+            <h3 class="text-xl font-serif text-slate-900">未来24小时高风险课程看板</h3>
+            <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-rose-100 text-rose-700">
+              <iconify-icon icon="lucide:alert-triangle" width="14"></iconify-icon>
+              风险预警
+            </span>
+          </div>
+          <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Risk Monitor</span>
+        </div>
+        <div v-if="highRiskCourses.length === 0" class="text-center py-8">
+          <iconify-icon icon="lucide:shield-check" width="40" class="text-emerald-400 mb-3"></iconify-icon>
+          <p class="text-slate-400 text-sm">未来24小时内暂无高风险课程</p>
+        </div>
+        <div v-else class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-slate-100">
+                <th class="text-left py-3 px-4 font-medium text-slate-500">课程名称</th>
+                <th class="text-left py-3 px-4 font-medium text-slate-500">时间</th>
+                <th class="text-left py-3 px-4 font-medium text-slate-500">教练</th>
+                <th class="text-center py-3 px-4 font-medium text-slate-500">候补人数</th>
+                <th class="text-center py-3 px-4 font-medium text-slate-500">爽约率</th>
+                <th class="text-center py-3 px-4 font-medium text-slate-500">风险等级</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="course in highRiskCourses" :key="course.courseId" class="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                <td class="py-3 px-4 font-medium text-slate-900">{{ course.courseName }}</td>
+                <td class="py-3 px-4 text-slate-600">{{ course.startTime }} - {{ course.endTime }}</td>
+                <td class="py-3 px-4 text-slate-600">{{ course.coachName }}</td>
+                <td class="py-3 px-4 text-center">
+                  <span class="inline-flex items-center justify-center w-8 h-8 rounded-full" :class="course.waitingCount > 0 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'">
+                    {{ course.waitingCount }}
+                  </span>
+                </td>
+                <td class="py-3 px-4 text-center">
+                  <span class="font-medium" :class="course.noShowRate > 0.3 ? 'text-rose-600' : course.noShowRate > 0.15 ? 'text-amber-600' : 'text-slate-600'">
+                    {{ (course.noShowRate * 100).toFixed(1) }}%
+                  </span>
+                </td>
+                <td class="py-3 px-4 text-center">
+                  <span v-if="course.riskLevel === 'HIGH'" class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-rose-100 text-rose-700">
+                    <iconify-icon icon="lucide:alert-octagon" width="12"></iconify-icon>
+                    高风险
+                  </span>
+                  <span v-else-if="course.riskLevel === 'MEDIUM'" class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                    <iconify-icon icon="lucide:alert-circle" width="12"></iconify-icon>
+                    中风险
+                  </span>
+                  <span v-else class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                    <iconify-icon icon="lucide:info" width="12"></iconify-icon>
+                    低风险
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </template>
     <template v-if="userStore.role === 'ROLE_COACH'">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <StatsCard icon="lucide:calendar" :value="coachStats.courseCount || 0" label="本月课程" color="blue" />
@@ -237,7 +298,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useUserStore } from '@/store/modules/user'
-import { getAdminStatistics, getCoachPerformance, getMemberStatistics } from '@/api/statistics'
+import { getAdminStatistics, getCoachPerformance, getMemberStatistics, getHighRiskCourses } from '@/api/statistics'
 import StatsCard from '@/components/common/StatsCard.vue'
 import dayjs from 'dayjs'
 
@@ -246,6 +307,7 @@ const userStore = useUserStore()
 const stats = ref({})
 const coachStats = ref({})
 const memberStats = ref({})
+const highRiskCourses = ref([])
 
 const getGreeting = () => {
   const hour = new Date().getHours()
@@ -286,6 +348,8 @@ onMounted(async () => {
   if (userStore.role === 'ROLE_ADMIN') {
     const res = await getAdminStatistics()
     stats.value = res.data
+    const riskRes = await getHighRiskCourses()
+    highRiskCourses.value = riskRes.data
   } else if (userStore.role === 'ROLE_COACH') {
     const startDate = dayjs().startOf('month').format('YYYY-MM-DD')
     const endDate = dayjs().endOf('month').format('YYYY-MM-DD')

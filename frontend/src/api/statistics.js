@@ -25,3 +25,8 @@ export function getMemberStatistics() {
 export function getSystemLogs(params) {
   return request.get('/statistics/logs', { params })
 }
+
+// 获取高风险课程
+export function getHighRiskCourses() {
+  return request.get('/statistics/admin/high-risk-courses')
+}
