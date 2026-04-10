@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.fitness.mapper.WaitingListMapper">
+
+    <select id="selectPageWithDetail" resultType="com.fitness.entity.WaitingList">
+        SELECT w.*, m.name as memberName, c.name as courseName, c.start_time as courseStartTime
+        FROM waiting_list w
+        LEFT JOIN member m ON w.member_id = m.id
+        LEFT JOIN course c ON w.course_id = c.id
+        <where>
+            <if test="memberId != null">
+                AND w.member_id = #{memberId}
+            </if>
+            <if test="courseId != null">
+                AND w.course_id = #{courseId}
+            </if>
+            <if test="status != null">
+                AND w.status = #{status}
+            </if>
+        </where>
+        ORDER BY w.create_time DESC
+    </select>
+
+    <select id="selectByCourseIdOrderByQueueOrder" resultType="com.fitness.entity.WaitingList">
+        SELECT * FROM waiting_list
+        WHERE course_id = #{courseId} AND status = 0
+        ORDER BY queue_order ASC
+        LIMIT 1
+    </select>
+
+</mapper>

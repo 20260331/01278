@@ -6,10 +6,13 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.fitness.common.PageResult;
 import com.fitness.entity.Course;
 import com.fitness.entity.Reservation;
+import com.fitness.entity.WaitingList;
 import com.fitness.exception.BusinessException;
 import com.fitness.mapper.ReservationMapper;
 import com.fitness.service.CourseService;
+import com.fitness.service.NotificationService;
 import com.fitness.service.ReservationService;
+import com.fitness.service.WaitingListService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -50,6 +53,8 @@ import java.time.LocalDateTime;
 public class ReservationServiceImpl extends ServiceImpl<ReservationMapper, Reservation> implements ReservationService {
 
     private final CourseService courseService;
+    private final WaitingListService waitingListService;
+    private final NotificationService notificationService;
 
     @Override
     public PageResult<Reservation> pageList(Page<Reservation> page, Long memberId, Long courseId, Integer status) {
@@ -167,8 +172,34 @@ public class ReservationServiceImpl extends ServiceImpl<ReservationMapper, Reser
         
         // 更新课程人数，delta=-1 表示减少1人
         // 这会触发课程状态检查，如果课程之前是已满状态会自动恢复
-        courseService.updateCurrentCount(reservation.getCourseId(), -1);
-        
+        Long courseId = reservation.getCourseId();
+        courseService.updateCurrentCount(courseId, -1);
+
+        // 触发候补补位逻辑
+        WaitingList nextWaiting = waitingListService.processNextWaitingMember(courseId);
+        if (nextWaiting != null) {
+            // 创建新的预约记录
+            Reservation newReservation = new Reservation();
+            newReservation.setMemberId(nextWaiting.getMemberId());
+            newReservation.setCourseId(courseId);
+            newReservation.setStatus(0);
+            save(newReservation);
+
+            // 再次更新课程人数
+            courseService.updateCurrentCount(courseId, 1);
+
+            // 发送补位成功通知
+            notificationService.createNotification(
+                    nextWaiting.getMemberId(),
+                    "候补补位成功通知",
+                    "恭喜您！您已成功从候补队列补位到课程，请及时查看您的预约记录。",
+                    1
+            );
+
+            log.info("候补补位成功: newReservationId={}, memberId={}",
+                    newReservation.getId(), nextWaiting.getMemberId());
+        }
+
         log.info("取消预约: id={}", id);
     }
 

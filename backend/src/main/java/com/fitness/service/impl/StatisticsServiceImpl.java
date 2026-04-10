@@ -4,14 +4,17 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fitness.entity.*;
 import com.fitness.mapper.*;
 import com.fitness.service.StatisticsService;
+import com.fitness.vo.HighRiskCourseVO;
 import com.fitness.vo.StatisticsVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -250,4 +253,78 @@ public class StatisticsServiceImpl implements StatisticsService {
         
         return result;
     }
+
+    @Override
+    public List<HighRiskCourseVO> getHighRiskCourses() {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime next24h = now.plusHours(24);
+
+        List<Course> courses = courseMapper.selectList(
+                new LambdaQueryWrapper<Course>()
+                        .ge(Course::getStartTime, now)
+                        .le(Course::getStartTime, next24h)
+                        .eq(Course::getStatus, 1));
+
+        List<HighRiskCourseVO> result = new ArrayList<>();
+        for (Course course : courses) {
+            HighRiskCourseVO vo = calculateCourseRisk(course);
+            if (!"LOW".equals(vo.getRiskLevel()) || vo.getWaitingCount() > 0) {
+                result.add(vo);
+            }
+        }
+
+        result.sort((a, b) -> {
+            int orderA = "HIGH".equals(a.getRiskLevel()) ? 3 : "MEDIUM".equals(a.getRiskLevel()) ? 2 : 1;
+            int orderB = "HIGH".equals(b.getRiskLevel()) ? 3 : "MEDIUM".equals(b.getRiskLevel()) ? 2 : 1;
+            return orderB - orderA;
+        });
+        return result;
+    }
+
+    private HighRiskCourseVO calculateCourseRisk(Course course) {
+        HighRiskCourseVO vo = new HighRiskCourseVO();
+        vo.setCourseId(course.getId());
+        vo.setCourseName(course.getName());
+        vo.setCoachName(course.getCoachName());
+        vo.setStartTime(course.getStartTime());
+        vo.setEndTime(course.getEndTime());
+        vo.setMaxCapacity(course.getMaxCapacity());
+        vo.setCurrentCount(course.getCurrentCount());
+
+        int waitingCount = baseMapperWait.count(new LambdaQueryWrapper<WaitingList>()
+                .eq(WaitingList::getCourseId, course.getId())
+                .eq(WaitingList::getStatus, 0));
+        vo.setWaitingCount(waitingCount);
+
+        int totalReservations = reservationMapper.selectCount(
+                new LambdaQueryWrapper<Reservation>()
+                        .eq(Reservation::getCourseId, course.getId())
+                        .ne(Reservation::getStatus, 2)).intValue();
+
+        int absentCount = reservationMapper.selectCount(
+                new LambdaQueryWrapper<Reservation>()
+                        .eq(Reservation::getCourseId, course.getId())
+                        .eq(Reservation::getStatus, 3)).intValue();
+
+        BigDecimal noShowRate = BigDecimal.ZERO;
+        if (totalReservations > 0) {
+            noShowRate = new BigDecimal(absentCount)
+                    .divide(new BigDecimal(totalReservations), 4, RoundingMode.HALF_UP);
+        }
+        vo.setNoShowRate(noShowRate);
+
+        double rate = noShowRate.doubleValue();
+        String riskLevel = "LOW";
+        if (rate >= 0.3 && waitingCount > 0) {
+            riskLevel = "HIGH";
+        } else if (rate >= 0.15 && waitingCount > 0) {
+            riskLevel = "MEDIUM";
+        }
+        vo.setRiskLevel(riskLevel);
+
+        return vo;
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private WaitingListMapper baseMapperWait;
 }

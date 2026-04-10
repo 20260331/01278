@@ -140,6 +140,18 @@ const routes = [
         name: 'Feedback',
         component: () => import('@/views/member/Feedback.vue'),
         meta: { title: '意见反馈', roles: ['ROLE_MEMBER'] }
+      },
+      {
+        path: 'my-waiting-list',
+        name: 'MyWaitingList',
+        component: () => import('@/views/member/MyWaitingList.vue'),
+        meta: { title: '我的候补', roles: ['ROLE_MEMBER'] }
+      },
+      {
+        path: 'notifications',
+        name: 'Notifications',
+        component: () => import('@/views/member/Notifications.vue'),
+        meta: { title: '消息通知', roles: ['ROLE_MEMBER', 'ROLE_ADMIN', 'ROLE_COACH'] }
       }
     ]
   },
