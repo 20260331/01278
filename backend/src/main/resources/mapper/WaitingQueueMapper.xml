@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.fitness.mapper.WaitingQueueMapper">
+
+    <select id="selectWaitingQueueWithDetail" resultType="com.fitness.entity.WaitingQueue">
+        SELECT w.*,
+               m.name AS memberName,
+               c.name AS courseName,
+               c.start_time AS courseStartTime
+        FROM waiting_queue w
+        LEFT JOIN member m ON w.member_id = m.id
+        LEFT JOIN course c ON w.course_id = c.id
+        <where>
+            <if test="courseId != null">
+                AND w.course_id = #{courseId}
+            </if>
+            <if test="status != null">
+                AND w.status = #{status}
+            </if>
+        </where>
+        ORDER BY w.queue_order ASC
+    </select>
+
+    <select id="selectWaitingQueueWithMember" resultType="com.fitness.entity.WaitingQueue">
+        SELECT w.*,
+               m.name AS memberName,
+               c.name AS courseName,
+               c.start_time AS courseStartTime
+        FROM waiting_queue w
+        LEFT JOIN member m ON w.member_id = m.id
+        LEFT JOIN course c ON w.course_id = c.id
+        WHERE w.member_id = #{memberId}
+        ORDER BY w.create_time DESC
+    </select>
+
+    <select id="selectUnreadNotified" resultType="com.fitness.entity.WaitingQueue">
+        SELECT w.*,
+               c.name AS courseName,
+               c.start_time AS courseStartTime
+        FROM waiting_queue w
+        LEFT JOIN course c ON w.course_id = c.id
+        WHERE w.member_id = #{memberId}
+          AND w.status = 1
+          AND w.notified = 0
+        ORDER BY w.update_time ASC
+    </select>
+
+</mapper>
